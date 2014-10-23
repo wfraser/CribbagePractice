@@ -16,7 +16,7 @@ namespace CribbagePractice
 
             var program = new Program();
             var game = new Game(program);
-            var rand = new Random(2);
+            var rand = new Random();
             var deck = new Deck();
 
             do
