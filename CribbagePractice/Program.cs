@@ -4,34 +4,87 @@ using System.Linq;
 
 namespace CribbagePractice
 {
-    class Program
+    public class Program : IUserInterface
     {
+        private Hand m_hand;
+        private int m_playerScore = 0;
+        private int m_computerScore = 0;
+
         static void Main(string[] args)
         {
             Console.WriteLine("Welcome to Cribbage Practice");
 
-            var rand = new Random();
+            var program = new Program();
+            var game = new Game(program);
+            var rand = new Random(2);
             var deck = new Deck();
+
             do
             {
-                deck.Shuffle(rand);
                 Console.WriteLine();
-                bool win = Play(deck);
-                if (win)
-                    Console.Write("Aww yiss! ");
+
+                deck.Shuffle(rand);
+                game.Play(deck);
+
+                Console.WriteLine("Score total: You: {0}", program.m_playerScore);
+                Console.WriteLine("        Computer: {0}", program.m_computerScore);
                 Console.Write("Play again? [y/n] ");
             } while (Console.ReadLine().ToLower() == "y");
         }
 
-        class Guess
+        public void DisplayHand(Hand h)
         {
-            public List<Card> Cards;
-            public int Score;
+            m_hand = h;
+            Console.WriteLine(string.Join<Card>(" ", h.Cards));
         }
 
-        static bool GetGuess(Hand h, out Guess guess)
+        public void DisplayMissedCombos(IEnumerable<Combo> combos)
         {
-            guess = new Guess();
+            Console.WriteLine("You missed some:");
+            foreach (Combo c in combos)
+            {
+                Console.WriteLine("{0}: {1} points for a {2}", string.Join<Card>(" ", c.Cards), c.Score, c.Text);
+            }
+        }
+
+        public void DisplayWinMessage(int score)
+        {
+            Console.WriteLine("Aww yiss! {0} points for you!", score);
+        }
+
+        public void DisplayLoseMessage(int score)
+        {
+            Console.WriteLine("Computer gets muggins of {0} points.", score);
+        }
+
+        public void DisplayBadGuessWrongScore(Combo actualCombo)
+        {
+            Console.WriteLine("Nope, score is {0} for a {1}", actualCombo.Score, actualCombo.Text);
+        }
+
+        public void DisplayBadGuessInvalidCombo()
+        {
+            Console.WriteLine("Nope! That's nothing.");
+        }
+
+        public void DisplayCorrectGuess(Combo combo)
+        {
+            Console.WriteLine("Correct! {0} points for a {1}", combo.Score, combo.Text);
+        }
+
+        public void AddScoreComputer(int score)
+        {
+            m_computerScore += score;
+        }
+
+        public void AddScorePlayer(int score)
+        {
+            m_playerScore += score;
+        }
+
+        public Guess GetGuess()
+        {
+            Guess guess = new Guess();
 
             var cards = new HashSet<Card>();
             guess.Score = 0;
@@ -65,7 +118,7 @@ namespace CribbagePractice
                             Console.WriteLine("You typed {0} twice!", c);
                             throw new Exception();
                         }
-                        if (!h.Cards.Contains(c))
+                        if (!m_hand.Cards.Contains(c))
                         {
                             Console.WriteLine("That card, {0}, isn't in your hand!", c);
                             throw new Exception();
@@ -79,63 +132,10 @@ namespace CribbagePractice
                 }
 
                 guess.Cards = cards.ToList();
-                return true;
+                return guess;
             }
 
-            return false;
-        }
-
-        static bool Play(Deck deck)
-        {
-            Hand h = deck.DealHand(5);
-            Console.WriteLine(string.Join<Card>(" ", h.Cards));
-
-            List<Combo> combos = Combo.FindAllCombos(h.Cards);
-
-            Guess guess;
-            while (true)
-            {
-                bool guessed = GetGuess(h, out guess);
-                if (!guessed)
-                {
-                    if (combos.Count > 0)
-                    {
-                        Console.WriteLine("You missed some. Try some more or press <enter> again.");
-                        guessed = GetGuess(h, out guess);
-
-                        if (!guessed)
-                        {
-                            foreach (Combo c in combos)
-                            {
-                                Console.WriteLine("{0}: {1} points - {2}", string.Join<Card>(" ", c.Cards), c.Score, c.Text);
-                            }
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                }
-
-                Combo combo = combos.FirstOrDefault(o => o.Equals(guess.Cards));
-                if (combo == null)
-                {
-                    Console.WriteLine("Nope! That's nothing.");
-                }
-                else
-                {
-                    if (guess.Score == combo.Score)
-                    {
-                        Console.WriteLine("Correct!");
-                        combos.Remove(combo);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Nope, score is {0}: {1}", combo.Score, combo.Text);
-                    }
-                }
-            }
+            return null;
         }
     }
 }
